@@ -13,6 +13,8 @@ const session = require('express-session');
 mongoose.connect("mongodb://localhost:27017/database", { useNewUrlParser: true });
 
 const User = require('./models/User')
+const Session = require('./models/Session')
+
 passport.use(User.createStrategy());
 
 passport.serializeUser(function (user, done) {
@@ -73,7 +75,33 @@ app.get("/sessions", function (req, res) {
     } else {
         res.redirect("/login");
     }
-});
+})
+
+app.get("sessions/newSession", function (req, res) {
+    if (req.isAuthenticated()) {
+        var newSession = new Session({
+            sourceCode: "",
+            owner: req.user.username
+        });
+        newSession.save(function (err, data) {
+            if (err) {
+                console.log(err);
+                res.send("Server Error: try again later");
+            }
+            else {
+                res.redirect('/')
+            }
+        })
+    } else {
+        res.redirect("/login");
+    }
+})
+
+app.get("sessions/:id", function (red, res) {
+    if (req.params.id) {
+
+    }
+})
 
 app.post("/register", function (req, res) {
     User.register({ username: req.body.username }, req.body.password, function (err, user) {
@@ -109,6 +137,7 @@ app.post("/login", function (req, res) {
 
 
 //---------------------------------------------------------------
+
 
 app.listen(3000, function () {
     console.log("Server started on port 3000.");
