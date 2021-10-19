@@ -62,6 +62,19 @@ app.get("/login", function (req, res) {
     res.render("login")
 })
 
+app.get("/logout", function (req, res) {
+    req.logout();
+    res.redirect("/");
+})
+
+app.get("/sessions", function (req, res) {
+    if (req.isAuthenticated()) {
+        res.render("sessions");
+    } else {
+        res.redirect("/login");
+    }
+});
+
 app.post("/register", function (req, res) {
     User.register({ username: req.body.username }, req.body.password, function (err, user) {
         if (err) {
@@ -87,7 +100,7 @@ app.post("/login", function (req, res) {
             console.log(err);
         } else {
             passport.authenticate("local")(req, res, function () {
-                res.redirect("/");
+                res.redirect("/sessions");
             });
         }
     });
@@ -97,6 +110,6 @@ app.post("/login", function (req, res) {
 
 //---------------------------------------------------------------
 
-app.listen(8080, function () {
-    console.log("Server started on port 8080.");
+app.listen(3000, function () {
+    console.log("Server started on port 3000.");
 });
