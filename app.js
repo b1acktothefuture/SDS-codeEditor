@@ -5,7 +5,10 @@ const ejs = require('ejs')
 const mongoose = require("mongoose");
 const passport = require("passport");
 const session = require('express-session');
-
+const http = require('http')
+const path = require('path')
+const socketio = require('socket.io')
+const { userJoin, getCurrUser, userLeaves, getSessionUsers } = require("./utils/users")
 
 //---------------------------------------------------------------
 
@@ -32,6 +35,8 @@ passport.deserializeUser(function (id, done) {
 
 
 const app = express();
+const server = http.createServer(app);
+const io = socketio(server)
 
 app.use(express.static("public"))
 app.set('view engine', 'ejs');
@@ -76,7 +81,8 @@ app.post("/sessions/newSession", function (req, res) {
     if (req.isAuthenticated()) {
         var newSession = new Session({
             sourceCode: "",
-            owner: req.user.username
+            owner: req.user.username,
+            sessionName: req.body.sessionName
         });
         newSession.save(function (err, data) {
             if (err) {
@@ -84,8 +90,6 @@ app.post("/sessions/newSession", function (req, res) {
                 res.render("error")
             }
             else {
-                console.log(data._id)
-                req.user.sessions.push(data._id)
                 User.findByIdAndUpdate({ _id: req.user._id },
                     { $push: { sessions: data._id } },
                     function (error, success) {
@@ -94,7 +98,7 @@ app.post("/sessions/newSession", function (req, res) {
                             res.render("error")
                         }
                     })
-                res.redirect('/sessions/' + data._id)
+                res.redirect('/sessions?id=' + data._id + '&name=' + req.user.name)
             }
         })
     } else {
@@ -102,17 +106,18 @@ app.post("/sessions/newSession", function (req, res) {
     }
 })
 
-app.get("/sessions/:id", function (req, res) {
-    if (req.params.id) {
-        Session.findOne({ _id: req.params.id }, function (err, data) {
+app.get("/sessions", function (req, res) {
+    if (req.query["id"]) {
+        if (!req.query["name"]) {
+            res.render("error")
+        }
+        Session.findOne({ _id: req.query["id"] }, function (err, data) {
             if (err) {
                 console.log('err')
                 res.render("error")
             }
             if (data) {
-                // Implementation remaining
-                console.log(data)
-                res.render("session")
+                res.render("session", { nameVar: req.query["name"] })
             }
             else {
                 res.render('error')
@@ -130,7 +135,6 @@ app.post("/register", function (req, res) {
             console.log(err)
             res.redirect("/")
         } else {
-            console.log(user)
             passport.authenticate("local")(req, res, function () {
                 res.redirect("/home");
             });
@@ -160,7 +164,39 @@ app.post("/login", function (req, res) {
 
 //---------------------------------------------------------------
 
+io.on('connection', socket => {
+    socket.on('joinSession', ({ username, session }) => {
+        const user = userJoin(socket.id, username, session)
+        socket.join(user.session)
+        io.to(user.session).emit('sessionusers', {
+            session: user.session,
+            users: getSessionUsers(user.session)
+        })
+    })
 
-app.listen(3000, function () {
+    socket.on('codeChanged', (code) => {
+        const user = getCurrUser(socket.id)
+        io.to(user.session).emit("changedcode", code)
+    })
+
+    socket.on('disconnect', () => {
+        const user = userLeaves(socket.id)
+
+        if (user) {
+            // io.to(user.room)
+            //     .emit('message', formatMessage(botName, `${user.username} has left the chat`))
+
+            io.to(user.session).emit('sessionusers', {
+                session: user.session,
+                users: getSessionUsers(user.session)
+            })
+        }
+
+    })
+})
+
+//---------------------------------------------------------------
+
+server.listen(3000, function () {
     console.log("Server started on port 3000.");
 });
