@@ -53,31 +53,26 @@ app.use(passport.session());
 
 
 app.get("/", function (req, res) {
-    res.render("home")
+    if (req.isAuthenticated()) {
+        res.redirect("/home")
+    }
+    else { res.render("index") }
 });
-
-app.get("/register", function (req, res) {
-    res.render("register")
-})
-
-app.get("/login", function (req, res) {
-    res.render("login")
-})
 
 app.get("/logout", function (req, res) {
     req.logout();
     res.redirect("/");
 })
 
-app.get("/sessions", function (req, res) {
+app.get("/home", function (req, res) {
     if (req.isAuthenticated()) {
-        res.render("sessions");
+        res.render("home");
     } else {
         res.redirect("/login");
     }
 })
 
-app.get("sessions/newSession", function (req, res) {
+app.get("/sessions/newSession", function (req, res) {
     if (req.isAuthenticated()) {
         var newSession = new Session({
             sourceCode: "",
@@ -85,11 +80,21 @@ app.get("sessions/newSession", function (req, res) {
         });
         newSession.save(function (err, data) {
             if (err) {
-                console.log(err);
-                res.send("Server Error: try again later");
+                console.log(err)
+                res.render("error")
             }
             else {
-                res.redirect('/')
+                console.log(data._id)
+                req.user.sessions.push(data._id)
+                User.findByIdAndUpdate({ _id: req.user._id },
+                    { $push: { sessions: data._id } },
+                    function (error, success) {
+                        if (error) {
+                            console.log(error);
+                            res.render("error")
+                        }
+                    })
+                res.redirect('/sessions/' + data._id)
             }
         })
     } else {
@@ -97,20 +102,36 @@ app.get("sessions/newSession", function (req, res) {
     }
 })
 
-app.get("sessions/:id", function (red, res) {
+app.get("/sessions/:id", function (req, res) {
     if (req.params.id) {
-
+        Session.findOne({ _id: req.params.id }, function (err, data) {
+            if (err) {
+                console.log('err')
+                res.render("error")
+            }
+            if (data) {
+                // Implementation remaining
+                console.log(data)
+                res.render("session")
+            }
+            else {
+                res.render('error')
+            }
+        })
+    }
+    else {
+        res.render('error')
     }
 })
 
 app.post("/register", function (req, res) {
-    User.register({ username: req.body.username }, req.body.password, function (err, user) {
+    User.register({ username: req.body.username, name: req.body.name }, req.body.password, function (err, user) {
         if (err) {
-            console.log(err);
-            res.redirect("/register");
+            console.log(err)
+            res.redirect("/")
         } else {
             passport.authenticate("local")(req, res, function () {
-                res.redirect("/login");
+                res.redirect("/home");
             });
         }
     });
@@ -128,7 +149,7 @@ app.post("/login", function (req, res) {
             console.log(err);
         } else {
             passport.authenticate("local")(req, res, function () {
-                res.redirect("/sessions");
+                res.redirect("/home");
             });
         }
     });
