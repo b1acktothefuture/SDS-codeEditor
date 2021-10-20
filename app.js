@@ -66,13 +66,13 @@ app.get("/logout", function (req, res) {
 
 app.get("/home", function (req, res) {
     if (req.isAuthenticated()) {
-        res.render("home");
+        res.render("home", { nameVar: req.user.name });
     } else {
-        res.redirect("/login");
+        res.redirect("/");
     }
 })
 
-app.get("/sessions/newSession", function (req, res) {
+app.post("/sessions/newSession", function (req, res) {
     if (req.isAuthenticated()) {
         var newSession = new Session({
             sourceCode: "",
@@ -98,7 +98,7 @@ app.get("/sessions/newSession", function (req, res) {
             }
         })
     } else {
-        res.redirect("/login");
+        res.redirect("/");
     }
 })
 
@@ -130,6 +130,7 @@ app.post("/register", function (req, res) {
             console.log(err)
             res.redirect("/")
         } else {
+            console.log(user)
             passport.authenticate("local")(req, res, function () {
                 res.redirect("/home");
             });

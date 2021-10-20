@@ -1,12 +1,28 @@
 <%- include('partials/header') %>
+    <h1 class="display-3" style="display: inline;padding-bottom: 2%;color: aliceblue;">Hello <%= nameVar %>!
+    </h1>
+    <br>
     <div class="jumbotron text-center">
-        <h1 class="display-3">Hello</h1>
-        <hr>
         <div class="container" style="padding: 1%;">
-            <a class="btn btn-dark btn-lg" href="sessions/newSession" role="button" style="margin-right:16px">New
-                Session</a>
-            <a class="btn btn-light btn-lg" href="/logout" role="button">Log Out</a>
-        </div>
-    </div>
+            <div class="form-container">
+                <form action="sessions/newSession" method="POST">
+                    <h1>Create Session</h1>
+                    <br>
+                    <input style="padding-top: 5%;padding-bottom: 5%;" type="text" name="sessionName"
+                        placeholder="Session Name" />
+                    <br>
+                    <button>submit</button>
+                </form>
+                <button href="/logout" role="button">Log Out</button>
 
-    <%- include('partials/footer') %>
+            </div>
+            <div class="overlay-container">
+                <div class="overlay">
+                    <div class="overlay-panel overlay-right">
+                        <a class="btn btn-light btn-lg" href="/logout" role="button">Log Out</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <%- include('partials/footer') %>
