@@ -7,8 +7,9 @@ const passport = require("passport");
 const session = require('express-session');
 const http = require('http')
 const path = require('path')
-const socketio = require('socket.io')
-const { userJoin, getCurrUser, userLeaves, getSessionUsers } = require("./utils/users")
+const socketIO = require('socket.io')
+var ot = require('ot');
+// const { userJoin, getCurrUser, userLeaves, getSessionUsers } = require("./utils/users")
 
 //---------------------------------------------------------------
 
@@ -36,7 +37,7 @@ passport.deserializeUser(function (id, done) {
 
 const app = express();
 const server = http.createServer(app);
-const io = socketio(server)
+const io = socketIO(server)
 
 app.use(express.static("public"))
 app.set('view engine', 'ejs');
@@ -77,6 +78,41 @@ app.get("/home", function (req, res) {
     }
 })
 
+app.get("/sessions/join", function (req, res) {
+    if (req.isAuthenticated()) {
+        res.render("join", { sessionID: "", displayName: req.user.name })
+    }
+    else {
+        res.render("join", { sessionID: "", displayName: "" })
+    }
+})
+
+app.get("/sessions", function (req, res) {
+    if (req.query["id"]) {
+        if (req.query["name"]) {
+            Session.findOne({ _id: req.query["id"] }, function (err, data) {
+                if (err) {
+                    console.log('err')
+                    res.render("error")
+                }
+                else {
+                    if (data) {
+                        res.render("session", { nameVar: data.sessionName })
+                    }
+                    else {
+                        res.render('error')
+                    }
+                }
+            })
+        }
+        else
+            res.render("join", { sessionID: req.query["id"], displayName: "" })
+    }
+    else {
+        res.render('error')
+    }
+})
+
 app.post("/sessions/newSession", function (req, res) {
     if (req.isAuthenticated()) {
         var newSession = new Session({
@@ -103,29 +139,6 @@ app.post("/sessions/newSession", function (req, res) {
         })
     } else {
         res.redirect("/");
-    }
-})
-
-app.get("/sessions", function (req, res) {
-    if (req.query["id"]) {
-        if (!req.query["name"]) {
-            res.render("error")
-        }
-        Session.findOne({ _id: req.query["id"] }, function (err, data) {
-            if (err) {
-                console.log('err')
-                res.render("error")
-            }
-            if (data) {
-                res.render("session", { nameVar: req.query["name"] })
-            }
-            else {
-                res.render('error')
-            }
-        })
-    }
-    else {
-        res.render('error')
     }
 })
 
@@ -164,35 +177,46 @@ app.post("/login", function (req, res) {
 
 //---------------------------------------------------------------
 
-io.on('connection', socket => {
-    socket.on('joinSession', ({ username, session }) => {
-        const user = userJoin(socket.id, username, session)
-        socket.join(user.session)
-        io.to(user.session).emit('sessionusers', {
-            session: user.session,
-            users: getSessionUsers(user.session)
-        })
-    })
+var sessionList = {};
 
-    socket.on('codeChanged', (code) => {
-        const user = getCurrUser(socket.id)
-        io.to(user.session).emit("changedcode", code)
-    })
+io.on('connection', function (socket) {
 
-    socket.on('disconnect', () => {
-        const user = userLeaves(socket.id)
+    socket.on('joinSession', (data) => {
+        if (!sessionList[data.session]) {
+            str = Session.findById(data.session).sourceCode
+            console.log(str)
+            if (!str) {
+                var str =
+                    '// Welcome User';
+            }
+            var socketIOServer = new ot.EditorSocketIOServer(str, [], data.session, (socket, cb) => {
+                var self = this;
+                Session.findByIdAndUpdate({ _id: data.session }, { $set: { sourceCode: self.document } }, function (err, file) {
+                    if (err) {
+                        return cb(false);
+                    }
+                    cb(true);
+                });
+            });
+            sessionList[data.session] = socketIOServer;
 
-        if (user) {
-            // io.to(user.room)
-            //     .emit('message', formatMessage(botName, `${user.username} has left the chat`))
-
-            io.to(user.session).emit('sessionusers', {
-                session: user.session,
-                users: getSessionUsers(user.session)
-            })
         }
 
-    })
+        sessionList[data.session].addClient(socket);
+
+        sessionList[data.session].setName(socket, data.username);
+
+        socket.room = data.session;
+        socket.join(data.session);
+    });
+
+    socket.on('chatMessage', function (data) {
+        io.to(socket.room).emit('chatMessage', data);
+    });
+
+    socket.on('disconnect', function () {
+        socket.leave(socket.room);
+    });
 })
 
 //---------------------------------------------------------------

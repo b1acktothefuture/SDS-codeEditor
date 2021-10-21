@@ -1,9 +1,16 @@
-const { session, username } = Qs.parse(location.search, {
+const { id, name } = Qs.parse(location.search, {
     ignoreQueryPrefix: true
 })
 
+
+
+var editor = ace.edit("editor");
+ace.config.set('basePath', 'https://pagecdn.io/lib/ace/1.4.12/ace.js')
+editor.setTheme("ace/theme/monokai");
+editor.getSession().setMode("ace/mode/javascript");
+
 const socket = io()
-socket.emit('joinSession', { username, session })
+socket.emit('joinSession', { name, id })
 
 socket.on("changedcode", newCode => {
     before = editor.selection.toJSON();
@@ -14,11 +21,6 @@ socket.on("changedcode", newCode => {
 socket.on('sessionusers', ({ users }) => {
     // outputUsers(users)
 })
-
-var editor = ace.edit("editor");
-ace.config.set('basePath', 'https://pagecdn.io/lib/ace/1.4.12/ace.js')
-editor.setTheme("ace/theme/monokai");
-editor.session.setMode("ace/mode/javascript");
 
 editor.on('change', function () {
     if (editor.curOp && editor.curOp.command.name) {

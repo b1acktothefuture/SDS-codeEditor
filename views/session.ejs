@@ -1,27 +1,79 @@
-<%- include('partials/header') %>
-    <style type="text/css" media="screen">
-        #editor {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-        }
-    </style>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
 
-    <div id="editor">//Welcome <%= nameVar %>
+<head>
+    <meta charset="utf-8">
+    <title>Code Share</title>
+    <h1 id="name"> </h1>
+    <h1 id="session"> </h1>
+    <h1 id="sessionName">
+        <%= nameVar %>
+    </h1>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.30.0/theme/rubyblue.min.css">
+
+</head>
+
+<body style="background: #3b3b3b;">
+
+    <div>
+
+    </div>
+
+    <div style="width: 50%;">
+        <textarea id="codeeditor"></textarea>
     </div>
 
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/javascript/javascript.min.js"></script>
+    <script src="/plugins/ot/ot.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.10.1/qs.min.js"
         integrity="sha512-aTKlYRb1QfU1jlF3k+aS4AqTpnTXci4R79mkdie/bp6Xm51O5O3ESAYhvg6zoicj/PD6VYY0XrYwsWLcvGiKZQ=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"
-        integrity="sha384-KAZ4DtjNhLChOB/hxXuKqhMLYvx3b5MlT55xPEiNmREKRzeEm+RVPlTnAn0ajQNs"
-        crossorigin="anonymous"></script>
-    <script src="https://pagecdn.io/lib/ace/1.4.12/ace.js" type="text/javascript" charset="utf-8"></script>
 
-    <script src="/js/session.js"> </script>
+    <script>
+        const { id, name } = Qs.parse(location.search, {
+            ignoreQueryPrefix: true
+        })
 
+        document.getElementById("session").innerText = id
+        document.getElementById("name").innerText = name
+        /** CODE EDITOR FEATURE */
+        var EditorClient = ot.EditorClient;
+        var SocketIOAdapter = ot.SocketIOAdapter;
+        var CodeMirrorAdapter = ot.CodeMirrorAdapter;
+
+        var socket = io.connect('http://localhost:3000');
+        var codeEditor = CodeMirror.fromTextArea(document.getElementById('codeeditor'), {
+            lineNumbers: true,
+            theme: 'rubyblue'
+        });
+
+
+        var sourceCode = document.getElementById("codeeditor").innerText;
+        var cmClient;
+
+
+        function init(str, revision, clients, serverAdapter) {
+            if (!sourceCode) {
+                codeEditor.setValue(str);
+            }
+
+            cmClient = window.cmClient = new EditorClient(
+                revision, clients, serverAdapter, new CodeMirrorAdapter(codeEditor)
+            );
+        };
+
+        socket.on('doc', function (obj) {
+            init(obj.str, obj.revision, obj.clients, new SocketIOAdapter(socket));
+        });
+
+        socket.emit('joinSession', { session: id, username: name });
+
+
+
+    </script>
     <%- include('partials/footer') %>
