@@ -4,29 +4,40 @@
 <head>
     <meta charset="utf-8">
     <title>Code Share</title>
-    <h1 id="name"> </h1>
-    <h1 id="session"> </h1>
-    <h1 id="sessionName">
-        <%= nameVar %>
-    </h1>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.30.0/theme/rubyblue.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/theme/blackboard.min.css">
+
+    <link rel="stylesheet" href="/css/Main-styles.css">
+
+
 
 </head>
 
 <body style="background: #3b3b3b;">
 
-    <div>
-
+    <div class="topnav">
+        <a class="active" href="#home">&lt / CodeShare&gt</a>
+        <a id="name">News</a>
+        <a id="sessionName">
+            <%= nameVar %>
+        </a>
+        <a>Save</a>
     </div>
+    <h3 id="session" style="padding-left: 1%;font-family: 'Courier New', Courier, monospace;color: aliceblue;">
+    </h3>
 
-    <div style="width: 50%;">
+    <div style="width: 98%;height: 100%;padding-left: 1%;">
         <textarea id="codeeditor"></textarea>
     </div>
 
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/clike/clike.min.js"></script>
+
     <script src="/plugins/ot/ot.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.10.1/qs.min.js"
@@ -39,7 +50,7 @@
             ignoreQueryPrefix: true
         })
 
-        document.getElementById("session").innerText = id
+        document.getElementById("session").innerText = window.location.host + "/sessions?id=" + id
         document.getElementById("name").innerText = name
         /** CODE EDITOR FEATURE */
         var EditorClient = ot.EditorClient;
@@ -49,7 +60,9 @@
         var socket = io.connect('http://localhost:3000');
         var codeEditor = CodeMirror.fromTextArea(document.getElementById('codeeditor'), {
             lineNumbers: true,
-            theme: 'rubyblue'
+            // theme: 'blackboard',
+            matchBrackets: true,
+            mode: "clike"
         });
 
 
