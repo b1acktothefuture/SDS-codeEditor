@@ -3,7 +3,7 @@ const { id, name } = Qs.parse(location.search, {
 })
 
 document.getElementById("session").innerText = window.location.host + "/sessions?id=" + id
-document.getElementById("name").innerText = name
+document.getElementById("user-name").innerText = name
 
 var EditorClient = ot.EditorClient;
 var SocketIOAdapter = ot.SocketIOAdapter;
@@ -19,6 +19,7 @@ var codeEditor = CodeMirror.fromTextArea(document.getElementById('codeeditor'), 
 
 var sourceCode = document.getElementById("codeeditor").innerText;
 var cmClient;
+var chatIp = document.getElementById("user-send")
 
 
 function init(str, revision, clients, serverAdapter) {
@@ -39,7 +40,7 @@ var userMessage = function (name, text) {
 };
 
 var sendMessage = function () {
-    var userMessage = document.getElementById("user-send").value;
+    var userMessage = chatIp.value;
     socket.emit('chatMessage', { message: userMessage, username: name });
     document.getElementById("user-send").value = "";
 };
@@ -50,7 +51,9 @@ socket.on('doc', function (obj) {
 
 socket.on('chatMessage', function (obj) {
     console.log(obj)
-    document.getElementById("user-messages").innerHTML += userMessage(obj.username, obj.message)
+    var chat = document.getElementById("user-messages")
+    chat.innerHTML += userMessage(obj.username, obj.message)
+    chat.lastChild.scrollIntoView()
 })
 
 socket.emit('joinSession', { session: id, username: name });
