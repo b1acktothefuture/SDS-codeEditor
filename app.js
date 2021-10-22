@@ -182,19 +182,26 @@ var sessionList = {};
 io.on('connection', function (socket) {
 
     socket.on('joinSession', (data) => {
+
         if (!sessionList[data.session]) {
-            str = Session.findById(data.session).sourceCode
+            // Backup remaining
+            var str = "";
+            Session.find({}, {
+                _id: data.session
+            }, (err, data) => {
+                str += data.sourceCode
+            });
             console.log(str)
+
             if (!str) {
-                var str =
+                str =
                     '// Welcome User';
             }
             var socketIOServer = new ot.EditorSocketIOServer(str, [], data.session, (socket, cb) => {
                 var self = this;
-                Session.findByIdAndUpdate({ _id: data.session }, { $set: { sourceCode: self.document } }, function (err, file) {
-                    if (err) {
+                Session.findByIdAndUpdate({ _id: data.session }, { $set: { docObj: self.document } }, function (err, file) {
+                    if (err)
                         return cb(false);
-                    }
                     cb(true);
                 });
             });
@@ -208,13 +215,23 @@ io.on('connection', function (socket) {
 
         socket.room = data.session;
         socket.join(data.session);
+        io.to(socket.room).emit('chatMessage', { message: data.username + " has joined the chat", username: ">" })
     });
 
     socket.on('chatMessage', function (data) {
         io.to(socket.room).emit('chatMessage', data);
     });
 
+    socket.on("saveCode", function (data) {
+        console.log(data)
+        Session.findByIdAndUpdate({ _id: data.session }, { $set: { sourceCode: data.code } }, function (err, file) {
+            if (err)
+                console.log(err)
+        });
+    })
+
     socket.on('disconnect', function () {
+        io.to(socket.room).emit('chatMessage', { message: "A has left the chat", username: ">" })
         socket.leave(socket.room);
     });
 })

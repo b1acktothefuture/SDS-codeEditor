@@ -21,6 +21,11 @@ var sourceCode = document.getElementById("codeeditor").innerText;
 var cmClient;
 var chatIp = document.getElementById("user-send")
 
+document.getElementById("save").addEventListener("click", () => {
+    var text = codeEditor.getValue()
+    socket.emit("saveCode", { session: id, code: text })
+})
+
 
 function init(str, revision, clients, serverAdapter) {
     if (!sourceCode) {
