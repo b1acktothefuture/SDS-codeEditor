@@ -14,9 +14,8 @@ var socket = io.connect('http://localhost:3000');
 var codeEditor = CodeMirror.fromTextArea(document.getElementById('codeeditor'), {
     lineNumbers: true,
     matchBrackets: true,
-    mode: "python"
+    mode: "javascript"
 });
-
 
 var sourceCode = document.getElementById("codeeditor").innerText;
 var cmClient;
@@ -25,6 +24,17 @@ var chatIp = document.getElementById("user-send")
 document.getElementById("save").addEventListener("click", () => {
     var text = codeEditor.getValue()
     socket.emit("saveCode", { session: id, code: text })
+})
+
+document.getElementById("download").addEventListener("click", () => {
+    var text = codeEditor.getValue()
+
+    var fileBlob = new Blob([text], { type: "application/octet-binary" });
+
+    var link = document.createElement("a");
+    link.setAttribute("href", URL.createObjectURL(fileBlob));
+    link.setAttribute("download", "code.js");
+    link.click()
 })
 
 function init(str, revision, clients, serverAdapter) {
@@ -55,7 +65,6 @@ socket.on('doc', function (obj) {
 });
 
 socket.on('chatMessage', function (obj) {
-    console.log(obj)
     var chat = document.getElementById("user-messages")
     chat.innerHTML += userMessage(obj.username, obj.message)
     chat.lastChild.scrollIntoView()
