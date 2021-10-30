@@ -13,7 +13,6 @@ var ot = require('ot');
 
 //---------------------------------------------------------------
 
-
 mongoose.connect("mongodb://localhost:27017/database", { useNewUrlParser: true });
 
 const User = require('./models/User')
@@ -181,18 +180,13 @@ var sessionList = {};
 
 io.on('connection', function (socket) {
 
-    socket.on('joinSession', (data) => {
+    socket.on('joinSession', async (data) => {
 
         if (!sessionList[data.session]) {
             // Backup remaining
             var str = "";
-            Session.find({}, {
-                _id: data.session
-            }, (err, data) => {
-                str += data.sourceCode
-            });
-            console.log(str)
-
+            const savedSession = await Session.findById(data.session);
+            str += savedSession.sourceCode
             if (!str) {
                 str =
                     '// Welcome User';
@@ -216,6 +210,8 @@ io.on('connection', function (socket) {
         socket.room = data.session;
         socket.join(data.session);
         io.to(socket.room).emit('chatMessage', { message: data.username + " has joined the chat", username: ">" })
+
+        Session.find()
     });
 
     socket.on('chatMessage', function (data) {

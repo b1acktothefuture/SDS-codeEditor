@@ -1,6 +1,7 @@
 const { id, name } = Qs.parse(location.search, {
     ignoreQueryPrefix: true
 })
+var colorScheme = 1
 
 document.getElementById("session").innerText = window.location.host + "/sessions?id=" + id
 document.getElementById("user-name").innerText = name
@@ -25,7 +26,6 @@ document.getElementById("save").addEventListener("click", () => {
     var text = codeEditor.getValue()
     socket.emit("saveCode", { session: id, code: text })
 })
-
 
 function init(str, revision, clients, serverAdapter) {
     if (!sourceCode) {
