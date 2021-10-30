@@ -30,9 +30,7 @@ passport.deserializeUser(function (id, done) {
     });
 });
 
-
 //---------------------------------------------------------------
-
 
 const app = express();
 const server = http.createServer(app);
@@ -53,126 +51,13 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-
 //---------------------------------------------------------------
 
+const homes = require("./routes/homeRoutes")
+const sessions = require("./routes/sessions")
 
-app.get("/", function (req, res) {
-    if (req.isAuthenticated()) {
-        res.redirect("/home")
-    }
-    else { res.render("index") }
-});
-
-app.get("/logout", function (req, res) {
-    req.logout();
-    res.redirect("/");
-})
-
-app.get("/home", function (req, res) {
-    if (req.isAuthenticated()) {
-        res.render("home", { nameVar: req.user.name });
-    } else {
-        res.redirect("/");
-    }
-})
-
-app.get("/sessions/join", function (req, res) {
-    if (req.isAuthenticated()) {
-        res.render("join", { sessionID: "", displayName: req.user.name })
-    }
-    else {
-        res.render("join", { sessionID: "", displayName: "" })
-    }
-})
-
-app.get("/sessions", function (req, res) {
-    if (req.query["id"]) {
-        if (req.query["name"]) {
-            Session.findOne({ _id: req.query["id"] }, function (err, data) {
-                if (err) {
-                    console.log('err')
-                    res.render("error")
-                }
-                else {
-                    if (data) {
-                        res.render("session", { nameVar: data.sessionName })
-                    }
-                    else {
-                        res.render('error')
-                    }
-                }
-            })
-        }
-        else
-            res.render("join", { sessionID: req.query["id"], displayName: "" })
-    }
-    else {
-        res.render('error')
-    }
-})
-
-app.post("/sessions/newSession", function (req, res) {
-    if (req.isAuthenticated()) {
-        var newSession = new Session({
-            sourceCode: "",
-            owner: req.user.username,
-            sessionName: req.body.sessionName
-        });
-        newSession.save(function (err, data) {
-            if (err) {
-                console.log(err)
-                res.render("error")
-            }
-            else {
-                User.findByIdAndUpdate({ _id: req.user._id },
-                    { $push: { sessions: data._id } },
-                    function (error, success) {
-                        if (error) {
-                            console.log(error);
-                            res.render("error")
-                        }
-                    })
-                res.redirect('/sessions?id=' + data._id + '&name=' + req.user.name)
-            }
-        })
-    } else {
-        res.redirect("/");
-    }
-})
-
-app.post("/register", function (req, res) {
-    User.register({ username: req.body.username, name: req.body.name }, req.body.password, function (err, user) {
-        if (err) {
-            console.log(err)
-            res.redirect("/")
-        } else {
-            passport.authenticate("local")(req, res, function () {
-                res.redirect("/home");
-            });
-        }
-    });
-});
-
-app.post("/login", function (req, res) {
-
-    const user = new User({
-        username: req.body.username,
-        password: req.body.password
-    });
-
-    req.login(user, function (err) {
-        if (err) {
-            console.log(err);
-        } else {
-            passport.authenticate("local")(req, res, function () {
-                res.redirect("/home");
-            });
-        }
-    });
-
-});
-
+app.use("/", homes)
+app.use("/sessions", sessions)
 
 //---------------------------------------------------------------
 
