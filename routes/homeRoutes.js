@@ -4,6 +4,7 @@ const Session = require('../models/Session')
 const User = require('../models/User')
 const passport = require("passport");
 
+const link = "http://localhost:3000/sessions"
 
 router.get("/", function (req, res) {
     if (req.isAuthenticated()) {
@@ -17,9 +18,15 @@ router.get("/logout", function (req, res) {
     res.redirect("/");
 })
 
-router.get("/home", function (req, res) {
+router.get("/home", async function (req, res) {
     if (req.isAuthenticated()) {
-        res.render("home", { nameVar: req.user.name });
+        var owned = []
+        var sess;
+        for (var i = 0; i < req.user.sessions.length; i++) {
+            sess = await Session.findById(req.user.sessions[i])
+            owned.push({ id: sess._id, name: sess.sessionName })
+        }
+        res.render("home", { nameVar: req.user.name, owned: owned, link: link, user: req.user.name });
     } else {
         res.redirect("/");
     }

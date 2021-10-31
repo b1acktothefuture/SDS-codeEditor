@@ -3,6 +3,7 @@ const { id, name } = Qs.parse(location.search, {
 })
 var colorScheme = 1
 
+
 document.getElementById("session").innerText = window.location.host + "/sessions?id=" + id
 document.getElementById("user-name").innerText = name
 
